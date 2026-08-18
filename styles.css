@@ -51,6 +51,13 @@
 
 * { box-sizing: border-box; }
 
+/* The browser hides [hidden] with `display: none` at specificity (0,1,0), and
+ * an author rule of equal specificity beats it — so every `display` set on a
+ * class below (.view, .overlay, .toast) silently cancelled the hidden
+ * attribute, leaving both views stacked and both dialogs permanently over the
+ * app. Anything toggled by JS via .hidden depends on this rule. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;

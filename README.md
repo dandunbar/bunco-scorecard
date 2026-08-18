@@ -95,7 +95,14 @@ launch to appear. When shipping a change, bump `CACHE` in `sw.js` *and*
 `APP_VERSION` in `app.js` — they are compared, and installed phones will keep
 serving the old files otherwise.
 
-Two things there are easy to get wrong and worth leaving alone:
+Three things there are easy to get wrong and worth leaving alone:
+
+- **`[hidden] { display: none !important; }` near the top of `styles.css`.**
+  Views, dialogs and the toast are all shown and hidden by setting `.hidden`
+  from JS. The browser's own `[hidden]` rule is specificity (0,1,0), and so is
+  a class rule like `.overlay { display: flex }` — author styles win ties
+  against the browser, so without that line `hidden` does nothing at all and
+  every dialog sits permanently over the app.
 
 - **Cache names are prefixed `bunco-`, and only that prefix is ever deleted.**
   Every project on `dandunbar.github.io` shares one origin, and CacheStorage is

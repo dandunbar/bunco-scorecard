@@ -16,7 +16,7 @@
  * thing that is supposed to make them work without one. Hence the prefix:
  * this worker only ever deletes caches it created. */
 const PREFIX = 'bunco-';
-const CACHE = `${PREFIX}v1.0.2`;
+const CACHE = `${PREFIX}v1.0.3`;
 const SHELL = 'index.html';
 
 const ASSETS = [
