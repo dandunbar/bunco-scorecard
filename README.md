@@ -94,3 +94,15 @@ A service worker caches the app **cache-first**, so an edit takes one extra
 launch to appear. When shipping a change, bump `CACHE` in `sw.js` *and*
 `APP_VERSION` in `app.js` — they are compared, and installed phones will keep
 serving the old files otherwise.
+
+Two things there are easy to get wrong and worth leaving alone:
+
+- **Cache names are prefixed `bunco-`, and only that prefix is ever deleted.**
+  Every project on `dandunbar.github.io` shares one origin, and CacheStorage is
+  per-origin, not per-scope. A worker that sweeps "every cache that isn't mine"
+  will delete the Happy Hour app's cache — and vice versa — leaving both
+  needing a network connection to rebuild the thing meant to work without one.
+- **`sw.js` is registered with `updateViaCache: 'none'` and excluded from the
+  worker's own fetch handler.** GitHub Pages puts a `max-age` on it, so without
+  this the browser can serve a stale worker from its HTTP cache and the app
+  stays frozen on an old version no matter what is on the server.

@@ -9,7 +9,14 @@
  * the old files. APP_VERSION in app.js should match.
  */
 
-const CACHE = 'bunco-v1.0.1';
+/* Every project on dandunbar.github.io shares one origin, and CacheStorage is
+ * per-origin rather than per-scope — so a sweep of "everything that isn't mine"
+ * would delete the Happy Hour app's cache, and its sweep would delete this
+ * one. Both apps would then need a network connection to rebuild the very
+ * thing that is supposed to make them work without one. Hence the prefix:
+ * this worker only ever deletes caches it created. */
+const PREFIX = 'bunco-';
+const CACHE = `${PREFIX}v1.0.2`;
 const SHELL = 'index.html';
 
 const ASSETS = [
@@ -35,7 +42,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(
+        keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k)),
+      ))
       .then(() => self.clients.claim()),
   );
 });
@@ -54,6 +63,10 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+
+  // Never serve the worker script from the cache it manages, or a new version
+  // can never be noticed and the app is frozen at this one forever.
+  if (url.pathname === self.location.pathname) return;
 
   // Any navigation resolves to the one page this app has.
   const key = req.mode === 'navigate' ? new Request(new URL(SHELL, self.location).href) : req;

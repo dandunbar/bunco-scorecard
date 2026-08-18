@@ -10,7 +10,7 @@
  * Everything lives in this phone's localStorage; nothing is sent anywhere.
  */
 
-const APP_VERSION = '1.0.1';   // keep in step with CACHE in sw.js
+const APP_VERSION = '1.0.2';   // keep in step with CACHE in sw.js
 const STATE_KEY = 'bunco.state.v1';
 const HISTORY_KEY = 'bunco.history.v1';
 const HISTORY_LIMIT = 24;
@@ -677,10 +677,36 @@ window.addEventListener('pageshow', () => { state = load(); renderAll(); });
 setView('play');
 renderAll();
 
+/* An outgoing worker keeps answering requests while its replacement installs,
+ * and writes what it answers into its own cache as it goes — so the old cache
+ * can outlive the activate meant to delete it, and sit there for good. This
+ * runs from the page instead, once the new worker is the one in charge and no
+ * such writes are still in flight. */
+async function sweepStaleCaches() {
+  if (!('caches' in window)) return;
+  const keep = `bunco-v${APP_VERSION}`;
+  try {
+    const keys = await caches.keys();
+    await Promise.all(
+      keys.filter((k) => k.startsWith('bunco-') && k !== keep).map((k) => caches.delete(k)),
+    );
+  } catch (err) {
+    console.warn('Could not tidy old caches.', err);
+  }
+}
+
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch((err) => {
+  window.addEventListener('load', async () => {
+    try {
+      /* updateViaCache 'none' stops the browser serving sw.js out of its own
+       * HTTP cache. GitHub Pages sets a max-age on it, which otherwise hides a
+       * new version for as long as that lasts — the app looks updated on the
+       * server and stays stale on the phone. */
+      const reg = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+      reg.update().catch(() => {});
+      await sweepStaleCaches();
+    } catch (err) {
       console.warn('Offline support unavailable.', err);
-    });
+    }
   });
 }
