@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bunco Scorecard</title>
+<meta name="description" content="Bunco scorecard: running score with a partner, and your own Bunco count.">
+<meta name="theme-color" content="#6d28d9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bunco">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="totals" id="totals">
+  <div class="bar">
+    <button class="gamebtn" id="gameBtn" type="button">
+      <span class="gamename" id="gameName">Bunco Night</span>
+      <span class="gamedate" id="gameDate"></span>
+    </button>
+    <div class="viewswitch" role="tablist" aria-label="View">
+      <button class="seg" id="tabPlay" type="button" role="tab" aria-selected="true">Play</button>
+      <button class="seg" id="tabCard" type="button" role="tab" aria-selected="false">Card</button>
+    </div>
+    <button class="iconbtn" id="settingsBtn" type="button" aria-label="Settings">Settings</button>
+  </div>
+
+  <div class="tiles">
+    <div class="tile total">
+      <div class="tile-value" id="tTotal">0</div>
+      <div class="tile-label">Total score</div>
+      <div class="tile-sub" id="tTotalSub">you &amp; your partner</div>
+    </div>
+    <div class="tile bunco">
+      <div class="tile-value" id="tBunco">0</div>
+      <div class="tile-label">Your Buncos</div>
+      <div class="tile-sub" id="tBuncoSub">partner: 0</div>
+    </div>
+    <div class="tile round">
+      <div class="tile-value" id="tRound">0</div>
+      <div class="tile-label">This round</div>
+      <div class="tile-sub" id="tRoundSub">0 rolls scored</div>
+    </div>
+    <div class="tile progress">
+      <div class="tile-value" id="tProgress">1<span class="of">/24</span></div>
+      <div class="tile-label">Round</div>
+      <div class="tile-sub" id="tProgressSub">Set 1 of 4</div>
+    </div>
+  </div>
+</header>
+
+<main>
+<div class="view" id="playView">
+  <section class="target" aria-label="Current round">
+    <button class="navbtn" id="prevRound" type="button" aria-label="Previous round">&#8249;</button>
+    <div class="target-mid">
+      <div class="target-eyebrow" id="targetEyebrow">Set 1 &middot; Round 1</div>
+      <div class="die die-lg" id="targetDie" aria-hidden="true"></div>
+      <div class="target-word" id="targetWord">Rolling for ones</div>
+    </div>
+    <button class="navbtn" id="nextRound" type="button" aria-label="Next round">&#8250;</button>
+  </section>
+
+  <section class="score" aria-label="Score this roll">
+    <div class="scorerow">
+      <button class="sbtn one" id="btn1" type="button">
+        <span class="sbtn-pts">+1</span>
+        <span class="sbtn-sub" id="sub1">one die</span>
+      </button>
+      <button class="sbtn two" id="btn2" type="button">
+        <span class="sbtn-pts">+2</span>
+        <span class="sbtn-sub" id="sub2">two dice</span>
+      </button>
+      <button class="sbtn five" id="btn5" type="button">
+        <span class="sbtn-pts">+5</span>
+        <span class="sbtn-sub">three of a kind</span>
+      </button>
+    </div>
+    <div class="scorerow buncorow">
+      <button class="sbtn bunco-me" id="btnBuncoMe" type="button">
+        <span class="sbtn-pts">BUNCO +21</span>
+        <span class="sbtn-sub">you rolled it &mdash; counts for you</span>
+      </button>
+      <button class="sbtn bunco-partner" id="btnBuncoPartner" type="button">
+        <span class="sbtn-pts">+21</span>
+        <span class="sbtn-sub">partner rolled it &mdash; score only</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="log" aria-label="This round">
+    <div class="log-head">
+      <h2>This round</h2>
+      <button class="undo" id="undoBtn" type="button" disabled>Undo last</button>
+    </div>
+    <ul class="rolls" id="rolls"></ul>
+    <p class="empty" id="rollsEmpty">Nothing scored yet this round. Tap a button each time a roll scores.</p>
+  </section>
+</div>
+
+<div class="view" id="cardView" hidden>
+  <section class="card" aria-label="Full scorecard">
+    <div class="log-head">
+      <h2>Scorecard</h2>
+      <span class="log-count" id="cardTotal">0</span>
+    </div>
+    <div id="sets"></div>
+    <div class="grand">
+      <div class="grand-row">
+        <span>Total score</span>
+        <strong id="grandScore">0</strong>
+      </div>
+      <div class="grand-row">
+        <span>Your Buncos</span>
+        <strong id="grandBunco">0</strong>
+      </div>
+      <div class="grand-row dim">
+        <span>Partner's Buncos (not yours)</span>
+        <strong id="grandBuncoP">0</strong>
+      </div>
+    </div>
+  </section>
+</div>
+</main>
+
+<div class="toast" id="toast" hidden>
+  <span class="toast-msg" id="toastMsg"></span>
+  <button class="toast-action" id="toastAction" type="button">Undo</button>
+</div>
+
+<!-- Settings -->
+<div class="overlay" id="settingsOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="sheet-head">
+      <h2 id="settingsTitle">Settings</h2>
+      <button class="iconbtn" id="settingsClose" type="button">Done</button>
+    </div>
+    <div class="sheet-body">
+      <label class="field">
+        <span>Game name</span>
+        <input type="text" id="fGameName" autocomplete="off" enterkeyhint="done">
+      </label>
+      <label class="field">
+        <span>Date</span>
+        <input type="date" id="fGameDate">
+      </label>
+
+      <p class="note">Four sets of six rounds &mdash; ones through sixes, four times through. A Bunco is three of the number you are rolling for and scores 21. Three of any other number scores 5. Your partner's 21s add to the score but are not your Buncos.</p>
+
+      <div class="sheet-actions">
+        <button class="wide" id="shareBtn" type="button">Share this game's summary</button>
+        <button class="wide danger" id="endGameBtn" type="button">End game &amp; start fresh</button>
+      </div>
+
+      <div class="history">
+        <h3>Past games</h3>
+        <ul id="historyList"></ul>
+        <p class="empty" id="historyEmpty">No past games saved yet.</p>
+      </div>
+
+      <p class="offline" id="offlineStatus">Checking&hellip;</p>
+      <p class="version" id="versionLine"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div class="overlay" id="confirmOverlay" hidden>
+  <div class="sheet narrow" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="sheet-head">
+      <h2 id="confirmTitle">Are you sure?</h2>
+    </div>
+    <div class="sheet-body">
+      <p id="confirmBody"></p>
+      <div class="sheet-actions row">
+        <button class="wide" id="confirmCancel" type="button">Cancel</button>
+        <button class="wide danger" id="confirmOk" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
