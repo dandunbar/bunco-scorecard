@@ -6,6 +6,11 @@
  */
 
 :root {
+  /* Without this, iOS Safari assumes the page is light-only and paints form
+   * controls — the date field especially — with its own light-mode text colour,
+   * which then sits invisible on the dark field background. */
+  color-scheme: light dark;
+
   --accent: #6d28d9;
   --one: #4b5563;
   --five: #b45309;
@@ -56,9 +61,13 @@ html, body {
   overscroll-behavior-y: contain;
 }
 
+/* Named rather than inherited, because iOS applies its own colour to form
+ * controls: -webkit-text-fill-color outranks `color` there, so it has to be
+ * stated too. Every button below that wants something else sets its own. */
 button, input {
   font: inherit;
-  color: inherit;
+  color: var(--text);
+  -webkit-text-fill-color: currentColor;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
@@ -594,7 +603,11 @@ section {
   background: var(--bg);
   width: 100%;
   max-width: 560px;
+  /* vh on iOS measures the viewport as if the toolbars were hidden, so a sheet
+   * sized in vh runs underneath Safari's address bar. dvh tracks what is
+   * actually on screen; the vh line is the fallback for browsers without it. */
   max-height: 92vh;
+  max-height: 92dvh;
   border-radius: 18px 18px 0 0;
   display: flex;
   flex-direction: column;
@@ -619,10 +632,23 @@ section {
 
 .sheet-head h2 { font-size: 17px; }
 
+/* The trailing 44px clears Safari's floating address bar, which sits over the
+ * page in a browser tab and reports no safe-area inset of its own. */
 .sheet-body {
-  padding: 16px calc(16px + var(--safe-r)) calc(20px + var(--safe-b)) calc(16px + var(--safe-l));
+  padding: 16px calc(16px + var(--safe-r)) calc(20px + var(--safe-b) + 44px) calc(16px + var(--safe-l));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.sheet.narrow .sheet-body {
+  padding-bottom: calc(20px + var(--safe-b));
+}
+
+#confirmBody {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.45;
+  margin: 0 0 16px;
 }
 
 .field {

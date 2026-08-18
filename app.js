@@ -10,7 +10,7 @@
  * Everything lives in this phone's localStorage; nothing is sent anywhere.
  */
 
-const APP_VERSION = '1.0.0';   // keep in step with CACHE in sw.js
+const APP_VERSION = '1.0.1';   // keep in step with CACHE in sw.js
 const STATE_KEY = 'bunco.state.v1';
 const HISTORY_KEY = 'bunco.history.v1';
 const HISTORY_LIMIT = 24;

@@ -9,7 +9,7 @@
  * the old files. APP_VERSION in app.js should match.
  */
 
-const CACHE = 'bunco-v1.0.0';
+const CACHE = 'bunco-v1.0.1';
 const SHELL = 'index.html';
 
 const ASSETS = [
