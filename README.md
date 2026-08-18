@@ -51,9 +51,23 @@ night.
 
 ## The Card tab
 
-The full 24-round grid: each round's points, a `BUNCO` badge for yours and a
-`21` badge for your partner's, a subtotal per set, and the game totals at the
-bottom.
+The full 24-round grid, three columns wide:
+
+- **Round & rolls** — the number being rolled for, then every roll that scored,
+  in the order it happened. Amber is three of another number, rose is your
+  Bunco, blue is your partner's 21.
+- **Bunco** — how many Buncos *you* rolled that round, subtotalled per set.
+- **Total** — the round's points.
+
+A round that has been played always shows a number in the Total column, `0`
+included, at full strength. A round still to come shows a dimmed `—` instead.
+That way a round where nothing scored reads as finished rather than as
+unplayed — the two are otherwise both worth zero and look identical.
+
+Moving on with **›** is what marks a round finished, so normally there is
+nothing to do. For a round that scored nothing there is also a **Round over, no
+score** button in the round panel, which toggles — handy for the last round of
+the night, where there is no **›** left to press.
 
 ## Settings
 

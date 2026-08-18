@@ -392,7 +392,31 @@ section {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 8px;
+}
+
+.head-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.roundover {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.roundover.on {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
 }
 
 .log-head h2 { font-size: 15px; }
@@ -498,7 +522,6 @@ section {
 .setrows li.subtotal {
   background: var(--surface-2);
   font-weight: 700;
-  justify-content: space-between;
   font-size: 14px;
 }
 
@@ -510,32 +533,73 @@ section {
   gap: 8px;
 }
 
-.row-marks {
+/* Column header. Widths and gaps match .setrows li below so the three columns
+ * line up down the whole card. */
+.cardhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 6px;
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-dim);
+}
+
+.ch-main { flex: 1; min-width: 0; }
+.ch-bunco { width: 34px; text-align: center; flex: none; }
+.ch-pts { width: 40px; text-align: right; flex: none; }
+
+.row-rolls {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
-.mark {
-  font-size: 10px;
+.pt {
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1;
+  padding: 4px 7px;
   border-radius: 999px;
-  padding: 2px 7px;
-  color: #fff;
-  letter-spacing: .04em;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
 }
 
-.mark.me { background: var(--bunco); }
-.mark.partner { background: var(--partner); }
+.pt.p5 { background: var(--five); color: #fff; }
+.pt.bme { background: var(--bunco); color: #fff; }
+.pt.bpartner { background: var(--partner); color: #fff; }
+
+.row-bunco {
+  width: 34px;
+  flex: none;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--bunco);
+  font-variant-numeric: tabular-nums;
+}
 
 .row-pts {
+  width: 40px;
+  flex: none;
+  text-align: right;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  min-width: 34px;
-  text-align: right;
 }
 
-.row-pts.zero { color: var(--text-dim); font-weight: 500; }
+/* A round still to come, and a set with no Buncos in it, both recede. A round
+ * that was played and scored nothing does not — it keeps the full-strength 0,
+ * which is the point. */
+.row-bunco.dim,
+.row-pts.dim {
+  color: var(--text-dim);
+  font-weight: 500;
+  opacity: .55;
+}
 
 .grand {
   border-top: 2px solid var(--border);

@@ -31,20 +31,20 @@
   </div>
 
   <div class="tiles">
-    <div class="tile total">
-      <div class="tile-value" id="tTotal">0</div>
-      <div class="tile-label">Total score</div>
-      <div class="tile-sub" id="tTotalSub">you &amp; your partner</div>
+    <div class="tile round">
+      <div class="tile-value" id="tRound">0</div>
+      <div class="tile-label">This round</div>
+      <div class="tile-sub" id="tRoundSub">0 rolls scored</div>
     </div>
     <div class="tile bunco">
       <div class="tile-value" id="tBunco">0</div>
       <div class="tile-label">Your Buncos</div>
       <div class="tile-sub" id="tBuncoSub">partner: 0</div>
     </div>
-    <div class="tile round">
-      <div class="tile-value" id="tRound">0</div>
-      <div class="tile-label">This round</div>
-      <div class="tile-sub" id="tRoundSub">0 rolls scored</div>
+    <div class="tile total">
+      <div class="tile-value" id="tTotal">0</div>
+      <div class="tile-label">Total score</div>
+      <div class="tile-sub" id="tTotalSub">you &amp; your partner</div>
     </div>
     <div class="tile progress">
       <div class="tile-value" id="tProgress">1<span class="of">/24</span></div>
@@ -96,7 +96,10 @@
   <section class="log" aria-label="This round">
     <div class="log-head">
       <h2>This round</h2>
-      <button class="undo" id="undoBtn" type="button" disabled>Undo last</button>
+      <div class="head-actions">
+        <button class="roundover" id="roundOverBtn" type="button" hidden>Round over, no score</button>
+        <button class="undo" id="undoBtn" type="button" disabled>Undo last</button>
+      </div>
     </div>
     <ul class="rolls" id="rolls"></ul>
     <p class="empty" id="rollsEmpty">Nothing scored yet this round. Tap a button each time a roll scores.</p>
@@ -108,6 +111,11 @@
     <div class="log-head">
       <h2>Scorecard</h2>
       <span class="log-count" id="cardTotal">0</span>
+    </div>
+    <div class="cardhead">
+      <span class="ch-main">Round &amp; rolls</span>
+      <span class="ch-bunco">Bunco</span>
+      <span class="ch-pts">Total</span>
     </div>
     <div id="sets"></div>
     <div class="grand">

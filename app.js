@@ -10,7 +10,7 @@
  * Everything lives in this phone's localStorage; nothing is sent anywhere.
  */
 
-const APP_VERSION = '1.0.3';   // keep in step with CACHE in sw.js
+const APP_VERSION = '1.1.0';   // keep in step with CACHE in sw.js
 const STATE_KEY = 'bunco.state.v1';
 const HISTORY_KEY = 'bunco.history.v1';
 const HISTORY_LIMIT = 24;
@@ -59,6 +59,10 @@ function blankState() {
     gameDate: todayISO(),
     roundIndex: 0,
     rounds: blankRounds(),
+    /* A round that scored nothing is otherwise indistinguishable from a round
+     * not yet played — both are worth zero. This records that the round was
+     * actually played, so the card can show a real 0 rather than a blank. */
+    done: Array.from({ length: TOTAL_ROUNDS }, () => false),
   };
 }
 
@@ -82,6 +86,10 @@ function normalizeRounds(raw) {
   return rounds;
 }
 
+function normalizeDone(raw) {
+  return Array.from({ length: TOTAL_ROUNDS }, (_, i) => (Array.isArray(raw) ? raw[i] === true : false));
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(STATE_KEY);
@@ -93,6 +101,7 @@ function load() {
       gameDate: typeof parsed.gameDate === 'string' ? parsed.gameDate : base.gameDate,
       roundIndex: clampRound(parsed.roundIndex),
       rounds: normalizeRounds(parsed.rounds),
+      done: normalizeDone(parsed.done),
     };
   } catch (err) {
     console.warn('Could not read the saved card, starting fresh.', err);
@@ -156,6 +165,22 @@ function grandTotal() {
   return state.rounds.reduce((n, list) => n + sumPts(list), 0);
 }
 
+/* Scoring at all is proof the round was played, so only a scoreless round ever
+ * needs the flag. */
+function isComplete(i) {
+  return state.done[i] || roundTotal(i) > 0;
+}
+
+function roundBuncos(i) {
+  return state.rounds[i].filter((e) => e.b === 'me').length;
+}
+
+function setBuncos(s) {
+  let n = 0;
+  for (let i = (s - 1) * ROUNDS_PER_SET; i < s * ROUNDS_PER_SET; i++) n += roundBuncos(i);
+  return n;
+}
+
 function buncoCount(who) {
   return state.rounds.reduce(
     (n, list) => n + list.filter((e) => e.b === who).length,
@@ -202,7 +227,8 @@ const els = {
   sub1: $('sub1'), sub2: $('sub2'),
   btnBuncoMe: $('btnBuncoMe'), btnBuncoPartner: $('btnBuncoPartner'),
 
-  undoBtn: $('undoBtn'), rolls: $('rolls'), rollsEmpty: $('rollsEmpty'),
+  undoBtn: $('undoBtn'), roundOverBtn: $('roundOverBtn'),
+  rolls: $('rolls'), rollsEmpty: $('rollsEmpty'),
 
   sets: $('sets'), cardTotal: $('cardTotal'),
   grandScore: $('grandScore'), grandBunco: $('grandBunco'), grandBuncoP: $('grandBuncoP'),
@@ -271,6 +297,20 @@ function goToRound(i) {
   renderAll();
 }
 
+/* Moving on with the arrow is the gesture that means "that round is over", so
+ * it marks the round being left. Going back does not — reviewing an earlier
+ * round should not claim anything about it. */
+function advanceRound() {
+  state.done[state.roundIndex] = true;
+  goToRound(state.roundIndex + 1);
+}
+
+function toggleRoundOver() {
+  state.done[state.roundIndex] = !state.done[state.roundIndex];
+  save();
+  renderAll();
+}
+
 /* ---------- Render ---------- */
 
 function renderHeader() {
@@ -317,6 +357,13 @@ function renderRolls() {
   els.rollsEmpty.hidden = list.length > 0;
   els.undoBtn.disabled = list.length === 0;
 
+  /* Only a scoreless round needs marking; one with points already reads as
+   * played from its total alone. */
+  const marked = state.done[state.roundIndex];
+  els.roundOverBtn.hidden = list.length > 0;
+  els.roundOverBtn.textContent = marked ? '✓ Round over' : 'Round over, no score';
+  els.roundOverBtn.classList.toggle('on', marked);
+
   for (const e of list) {
     const li = document.createElement('li');
     if (e.b === 'me') li.className = 'bme';
@@ -337,6 +384,67 @@ function renderRolls() {
   }
 }
 
+function numCell(cls, value, dim) {
+  const el = document.createElement('span');
+  el.className = dim ? `${cls} dim` : cls;
+  el.textContent = value;
+  return el;
+}
+
+function cardRow(i) {
+  const list = state.rounds[i];
+
+  const li = document.createElement('li');
+  if (i === state.roundIndex) li.classList.add('current');
+
+  const main = document.createElement('div');
+  main.className = 'row-main';
+  main.appendChild(dieEl(targetOf(i)));
+
+  /* Every roll that scored, in the order it was rolled, colour-coded: amber
+   * for three of another number, rose for your Bunco, blue for your
+   * partner's 21. The round's total sits at the end of the line. */
+  const rollsEl = document.createElement('div');
+  rollsEl.className = 'row-rolls';
+  for (const e of list) {
+    const chip = document.createElement('span');
+    chip.className = 'pt'
+      + (e.b === 'me' ? ' bme' : e.b === 'partner' ? ' bpartner' : e.p === MINI_PTS ? ' p5' : '');
+    chip.textContent = e.p;
+    rollsEl.appendChild(chip);
+  }
+  main.appendChild(rollsEl);
+  li.appendChild(main);
+
+  const b = roundBuncos(i);
+  li.appendChild(numCell('row-bunco', b, b === 0));
+
+  /* A played round always shows a number, 0 included, so it reads the same as
+   * any other; a round still to come shows a dash instead. */
+  const played = isComplete(i);
+  li.appendChild(numCell('row-pts', played ? sumPts(list) : '—', !played));
+
+  /* Jumping to a round from the card is quicker than arrowing across a whole
+   * set when someone realises a round back was mis-tapped. */
+  li.addEventListener('click', () => { goToRound(i); setView('play'); });
+  return li;
+}
+
+function subtotalRow(s) {
+  const li = document.createElement('li');
+  li.className = 'subtotal';
+
+  const label = document.createElement('div');
+  label.className = 'row-main';
+  label.textContent = `Set ${s}`;
+  li.appendChild(label);
+
+  const b = setBuncos(s);
+  li.appendChild(numCell('row-bunco', b, b === 0));
+  li.appendChild(numCell('row-pts', setTotal(s), false));
+  return li;
+}
+
 function renderCard() {
   els.sets.textContent = '';
 
@@ -350,51 +458,8 @@ function renderCard() {
 
     const ul = document.createElement('ul');
     ul.className = 'setrows';
-
-    for (let r = 0; r < ROUNDS_PER_SET; r++) {
-      const i = (s - 1) * ROUNDS_PER_SET + r;
-      const list = state.rounds[i];
-      const pts = sumPts(list);
-
-      const li = document.createElement('li');
-      if (i === state.roundIndex) li.classList.add('current');
-
-      const main = document.createElement('div');
-      main.className = 'row-main';
-      main.appendChild(dieEl(targetOf(i)));
-
-      const marks = document.createElement('div');
-      marks.className = 'row-marks';
-      for (const e of list) {
-        if (!e.b) continue;
-        const m = document.createElement('span');
-        m.className = `mark ${e.b}`;
-        m.textContent = e.b === 'me' ? 'BUNCO' : '21';
-        marks.appendChild(m);
-      }
-      main.appendChild(marks);
-      li.appendChild(main);
-
-      const p = document.createElement('span');
-      p.className = pts ? 'row-pts' : 'row-pts zero';
-      p.textContent = pts;
-      li.appendChild(p);
-
-      /* Jumping to a round from the card is quicker than arrowing across a
-       * whole set when someone realises a round back was mis-tapped. */
-      li.addEventListener('click', () => { goToRound(i); setView('play'); });
-
-      ul.appendChild(li);
-    }
-
-    const sub = document.createElement('li');
-    sub.className = 'subtotal';
-    const subLabel = document.createElement('span');
-    subLabel.textContent = `Set ${s} total`;
-    const subVal = document.createElement('span');
-    subVal.textContent = setTotal(s);
-    sub.append(subLabel, subVal);
-    ul.appendChild(sub);
+    for (let r = 0; r < ROUNDS_PER_SET; r++) ul.appendChild(cardRow((s - 1) * ROUNDS_PER_SET + r));
+    ul.appendChild(subtotalRow(s));
 
     block.appendChild(ul);
     els.sets.appendChild(block);
@@ -473,12 +538,15 @@ function summaryText(snapshot = state) {
   for (let s = 1; s <= SETS; s++) {
     const per = [];
     let st = 0;
+    let sb = 0;
     for (let r = 0; r < ROUNDS_PER_SET; r++) {
-      const pts = sumPts(rounds[(s - 1) * ROUNDS_PER_SET + r]);
-      st += pts;
-      per.push(String(pts).padStart(3));
+      const round = rounds[(s - 1) * ROUNDS_PER_SET + r];
+      st += sumPts(round);
+      sb += round.filter((e) => e.b === 'me').length;
+      per.push(String(sumPts(round)).padStart(3));
     }
-    lines.push(`Set ${s}:${per.join('')}   = ${st}`);
+    const buncos = sb ? `   ${plural(sb, 'Bunco', 'Buncos')}` : '';
+    lines.push(`Set ${s}:${per.join('')}   = ${String(st).padStart(3)}${buncos}`);
   }
 
   lines.push('', 'Rounds run 1-2-3-4-5-6 within each set.');
@@ -514,6 +582,7 @@ function endGame() {
       gameName: state.gameName,
       gameDate: state.gameDate,
       rounds: state.rounds,
+      done: state.done,
     });
     saveHistory(history);
   }
@@ -633,8 +702,10 @@ els.btnBuncoPartner.addEventListener('click', () => addRoll(BUNCO_PTS, 'partner'
 
 els.undoBtn.addEventListener('click', undoLast);
 
+els.roundOverBtn.addEventListener('click', toggleRoundOver);
+
 els.prevRound.addEventListener('click', () => goToRound(state.roundIndex - 1));
-els.nextRound.addEventListener('click', () => goToRound(state.roundIndex + 1));
+els.nextRound.addEventListener('click', advanceRound);
 
 els.tabPlay.addEventListener('click', () => setView('play'));
 els.tabCard.addEventListener('click', () => setView('card'));
